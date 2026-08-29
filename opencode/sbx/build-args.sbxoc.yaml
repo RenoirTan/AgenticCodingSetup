@@ -9,3 +9,8 @@ configs:
     environment:
       OPENCODE_VERSION: 1.18.10
       DDGS_BRANCH: v9.14.4
+  -
+    tag: 1.18.25-1
+    environment:
+      OPENCODE_VERSION: 1.18.25
+      DDGS_BRANCH: v9.16.0
