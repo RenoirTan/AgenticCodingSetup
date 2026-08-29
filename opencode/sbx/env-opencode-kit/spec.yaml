@@ -1,0 +1,14 @@
+schemaVersion: "1"
+kind: mixin
+name: env-opencode-kit
+displayName: My OpenCode Kit
+description: Docker sandbox kit for OpenCode, customized to my liking.
+
+environment:
+  variables:
+    OPENCODE_CONFIG: /tmp/opencode-config/.config/opencode/opencode.json
+    OPENCODE_CONFIG_DIR: /tmp/opencode-config/.config/opencode
+
+network:
+  allowedDomains:
+    - "localhost:11434" # ollama

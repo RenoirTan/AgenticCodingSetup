@@ -1,0 +1,9 @@
+schemaVersion: "1"
+kind: mixin
+name: my-opencode-kit
+displayName: My OpenCode Kit
+description: Docker sandbox kit for OpenCode, customized to my liking.
+
+network:
+  allowedDomains:
+    - "localhost:11434" # ollama

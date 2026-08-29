@@ -1,0 +1,10 @@
+services:
+  sbxoc:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        OPENCODE_VERSION: ${OPENCODE_VERSION}
+        DDGS_BRANCH: ${DDGS_BRANCH}
+      tags:
+        - "sbxoc:${SBXOC_VERSION}"

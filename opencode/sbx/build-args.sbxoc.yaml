@@ -1,0 +1,11 @@
+configs:
+  -
+    tag: 1.18.5-1
+    environment:
+      OPENCODE_VERSION: 1.18.5
+      DDGS_BRANCH: v9.14.4
+  -
+    tag: 1.18.10-1
+    environment:
+      OPENCODE_VERSION: 1.18.10
+      DDGS_BRANCH: v9.14.4

@@ -1,0 +1,5 @@
+log/*
+**/sbx/templates/*
+**/.env
+**/.config/opencode/*
+!**/.gitkeep
