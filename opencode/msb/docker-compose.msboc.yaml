@@ -1,0 +1,12 @@
+services:
+  msboc:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      args:
+        BUN_VERSION: ${BUN_VERSION}
+        OPENCODE_VERSION: ${OPENCODE_VERSION}
+        DDGS_BRANCH: ${DDGS_BRANCH}
+        UV_VERSION: ${UV_VERSION}
+      tags:
+        - "msboc:${MBSOC_VERSION:-1.18.30-1}"
