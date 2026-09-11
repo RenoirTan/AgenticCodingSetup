@@ -26,6 +26,11 @@ SBX_OPENCODE_BUILD_ARGS = SBX_OPENCODE_DIR / "build-args.sbxoc.yaml"
 SBX_OPENCODE_COMPOSE = SBX_OPENCODE_DIR / "docker-compose.sbxoc.yaml"
 SBX_OPENCODE_BUILD_ENV = SBX_OPENCODE_DIR / ".env"
 SBX_OPENCODE_TEMPLATES_DIR = SBX_OPENCODE_DIR / "templates"
+MSB_OPENCODE_DIR = OPENCODE_DIR / "msb"
+MSB_OPENCODE_COMPOSE = MSB_OPENCODE_DIR / "docker-compose.msboc.yaml"
+MSB_OPENCODE_BUILD_ARGS = MSB_OPENCODE_DIR / "build-args.msboc.yaml"
+MSB_OPENCODE_BUILD_ENV = MSB_OPENCODE_DIR / ".env"
+MSB_OPENCODE_TEMPLATES_DIR = MSB_OPENCODE_DIR / "templates"
 
 
 def _setup_logging() -> logging.Logger:
@@ -63,12 +68,17 @@ logger = _setup_logging()
 
 class AcsSetup(StrEnum):
     SBX_OPENCODE = "sbx_opencode"
+    MSB_OPENCODE = "msb_opencode"
 
 
 ACS_SETUP_ALIASES: Dict[AcsSetup, Set[str]] = {
     AcsSetup.SBX_OPENCODE: {
         str(AcsSetup.SBX_OPENCODE),
         "sbxoc",
+    },
+    AcsSetup.MSB_OPENCODE: {
+        str(AcsSetup.MSB_OPENCODE),
+        "msboc",
     },
 }
 
@@ -280,6 +290,34 @@ acs_create() {{
         print(output, file=sys.stderr)
 
 
+def prepare_msboc(config: AcsCmdConfig):
+    logger.warning("Preparing microsandbox opencode is not implemented")
+    config_mount = shlex.quote(
+        f"{SBX_OPENCODE_CONFIG_SRC / '.config' / 'opencode'}:/home/agent/.config/opencode:rw"
+    )
+    output = f"""# Example: create the microsandbox
+acs_create() {{
+  msb create \\
+    --name opencode \\
+    --replace \\
+    --cpus 2 \\
+    --memory 2G \\
+    --root-disk 4G \\
+    --mount-dir "$PWD:/home/agent/project:rw" \\
+    --workdir /home/agent/project \\
+    --mount-dir {config_mount} \\
+    msboc "$@"
+}}
+
+# Run OpenCode in the created sandbox
+acs_exec() {{
+  msb exec -t opencode -- opencode "$@"
+}}"""
+    print(output)
+    if not sys.stdout.isatty():
+        print(output, file=sys.stderr)
+
+
 def unprepare_sbxoc(config: AcsCmdConfig):
     logger.info("Unpreparing docker sbx opencode")
     dir_links = AcsDirLink.parse_dir_links(config.dirs)
@@ -296,6 +334,10 @@ def unprepare_sbxoc(config: AcsCmdConfig):
     logger.info("Unlinking additional directories")
     for d in dir_links:
         d.unlink(pretend=config.pretend)
+
+
+def unprepare_msboc(config: AcsCmdConfig):
+    logger.warning("Unpreparing microsandbox opencode is not implemented")
 
 
 def build_sbxoc(config: AcsCmdConfig):
@@ -371,10 +413,81 @@ acs_create_custom_sandbox() {{
         print(output, file=sys.stderr)
 
 
+def build_msboc(config: AcsCmdConfig):
+    logger.info(f"Building msboc:{config.tag or 'latest'}")
+    os.chdir(MSB_OPENCODE_DIR)
+    with MSB_OPENCODE_BUILD_ARGS.open("r") as baf:
+        logger.debug(f"Opening {MSB_OPENCODE_BUILD_ARGS}")
+        build_args = yaml.load(baf, Loader=yaml.CLoader)
+    ba_configs = build_args.get("configs")
+    if type(ba_configs) is not list:
+        raise ValueError(f"Bad {MSB_OPENCODE_BUILD_ARGS}")
+    build_config = None
+    if config.tag:
+        for bc in ba_configs:
+            if bc["tag"] == config.tag:
+                build_config = bc
+                break
+    else:
+        build_config = ba_configs[0]
+    if build_config is None:
+        raise ValueError(f"Could not find msboc:{config.tag}")
+    logger.debug(f"Found config for {build_config['tag']}")
+    build_env = [
+        f"{k}={shlex.quote(v)}\n" for k, v in build_config["environment"].items()
+    ]
+    build_env.append(f"MBSOC_VERSION={build_config['tag']}\n")
+    with MSB_OPENCODE_BUILD_ENV.open("w") as bef:
+        logger.info(f"Writing config for {build_config['tag']} in .env")
+        bef.writelines(build_env)
+
+    build_cmd = [
+        "docker",
+        "compose",
+        "-f",
+        str(MSB_OPENCODE_COMPOSE.absolute()),
+        "--env-file",
+        str(MSB_OPENCODE_BUILD_ENV.absolute()),
+        "build",
+    ]
+    logger.info(f"$ {shlex.join(map(shlex.quote, build_cmd))}")
+    build_process = Popen(build_cmd, stdout=PIPE, stderr=STDOUT)
+    for line in build_process.stdout:
+        logger.info(line.decode(encoding="utf-8").rstrip())
+    build_ret = build_process.wait()
+    if build_ret != 0:
+        raise ChildProcessError(f"docker build returned {build_ret}")
+    logger.info("Build successful")
+
+    image_name = f"msboc:{build_config['tag']}"
+    image_shname = shlex.quote(image_name)
+    MSB_OPENCODE_TEMPLATES_DIR.mkdir(parents=True, exist_ok=True)
+    template_path = MSB_OPENCODE_TEMPLATES_DIR / f"{image_name}.tar"
+    template_shpath = shlex.quote(str(template_path))
+    output = f"""# Run the following commands to export and use the image.
+
+# Save image locally
+acs_save_image() {{
+  docker image save {image_shname} -o {template_shpath}
+  echo Saved image to {template_shpath}
+}}
+
+# Import image into microsandbox
+acs_load_image() {{
+  msb load --input {template_shpath}
+}}"""
+
+    print(output)
+    if not sys.stdout.isatty():
+        print(output, file=sys.stderr)
+
+
 def prepare(config: AcsCmdConfig):
     match config.setup:
         case AcsSetup.SBX_OPENCODE:
             return prepare_sbxoc(config)
+        case AcsSetup.MSB_OPENCODE:
+            return prepare_msboc(config)
         case _:
             raise ValueError(f"Unknown command: {config.setup}")
 
@@ -383,6 +496,8 @@ def unprepare(config: AcsCmdConfig):
     match config.setup:
         case AcsSetup.SBX_OPENCODE:
             return unprepare_sbxoc(config)
+        case AcsSetup.MSB_OPENCODE:
+            return unprepare_msboc(config)
         case _:
             raise ValueError(f"Unknown command: {config.setup}")
 
@@ -391,6 +506,8 @@ def build(config: AcsCmdConfig):
     match config.setup:
         case AcsSetup.SBX_OPENCODE:
             return build_sbxoc(config)
+        case AcsSetup.MSB_OPENCODE:
+            return build_msboc(config)
         case _:
             raise ValueError(f"Unknown command: {config.setup}")
 

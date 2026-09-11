@@ -30,6 +30,8 @@ RUN groupadd --gid 1000 agent \
 ENV BUN_INSTALL=/home/agent/.bun
 ENV PATH=/home/agent/.bun/bin:${PATH}
 
+WORKDIR /home/agent/project
+
 # SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 USER agent
