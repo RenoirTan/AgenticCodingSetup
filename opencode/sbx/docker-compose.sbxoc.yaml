@@ -2,7 +2,7 @@ services:
   sbxoc:
     build:
       context: .
-      dockerfile: ./Dockerfile
+      dockerfile: ${DOCKERFILE:-./Dockerfile}
       args:
         OPENCODE_VERSION: ${OPENCODE_VERSION}
         DDGS_BRANCH: ${DDGS_BRANCH}

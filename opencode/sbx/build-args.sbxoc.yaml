@@ -19,7 +19,9 @@ configs:
     environment:
       OPENCODE_VERSION: 1.18.30
       DDGS_BRANCH: v9.16.0
-  - tag: 2.0.18-1
+  -
+    tag: 2.0.21-1
+    dockerfile: ./Dockerfile.v2
     environment:
-      OPENCODE_VERSION: 2.0.18
+      OPENCODE_VERSION: 2.0.21
       DDGS_BRANCH: v9.16.0

@@ -370,6 +370,9 @@ def build_sbxoc(config: AcsCmdConfig):
     build_env = [
         f"{k}={shlex.quote(v)}\n" for k, v in build_config["environment"].items()
     ]
+    dockerfile = build_config.get("dockerfile")
+    if dockerfile is not None:
+        build_env.append(f"DOCKERFILE={dockerfile}\n")
     build_env.append(f"SBXOC_VERSION={build_config['tag']}\n")
     with SBX_OPENCODE_BUILD_ENV.open("w") as bef:
         logger.info(f"Writing config for {build_config['tag']} in .env")
