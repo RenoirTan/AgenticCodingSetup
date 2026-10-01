@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 
 from argparse import ArgumentParser, Namespace
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 import logging
 import os
 from pathlib import Path
-from typing import Dict, Set, List, Literal, Iterable
 import shlex
 from subprocess import Popen, PIPE, STDOUT
 import sys
+from typing import Literal
 import yaml
 
 
@@ -47,17 +48,17 @@ def _setup_logging() -> logging.Logger:
 
     try:
         LOGS_DIR.mkdir(parents=True, exist_ok=True)
-    except:
+    except Exception:
         logger.warning("Could not make logs dir", exc_info=True)
     else:
         try:
             file_handler = logging.FileHandler(
-                LOGS_DIR / f"{datetime.now().isoformat()}.log"
+                LOGS_DIR / f"{datetime.now(tz=UTC).isoformat()}.log"
             )
             file_handler.setFormatter(log_formatter)
             file_handler.setLevel(logging.DEBUG)
             logger.addHandler(file_handler)
-        except:
+        except Exception:
             logger.warning("Could not create log file", exc_info=True)
 
     return logger
@@ -71,7 +72,7 @@ class AcsSetup(StrEnum):
     MSB_OPENCODE = "msb_opencode"
 
 
-ACS_SETUP_ALIASES: Dict[AcsSetup, Set[str]] = {
+ACS_SETUP_ALIASES: dict[AcsSetup, set[str]] = {
     AcsSetup.SBX_OPENCODE: {
         str(AcsSetup.SBX_OPENCODE),
         "sbxoc",
@@ -82,9 +83,9 @@ ACS_SETUP_ALIASES: Dict[AcsSetup, Set[str]] = {
     },
 }
 
-ACS_SETUP_ALIASES_REV: Dict[str, AcsSetup] = dict(
-    [(a, k) for k, v in ACS_SETUP_ALIASES.items() for a in v]
-)
+ACS_SETUP_ALIASES_REV: dict[str, AcsSetup] = {
+    a: k for k, v in ACS_SETUP_ALIASES.items() for a in v
+}
 
 
 class AcsCommand(StrEnum):
@@ -97,7 +98,7 @@ class AcsCommand(StrEnum):
 class AcsDirLink:
     src: str
     dest: str
-    opts: Literal["ro"] | Literal["rw"] = field(default="rw")
+    opts: Literal["ro", "rw"] = field(default="rw")
 
     @property
     def src_path(self) -> Path:
@@ -125,10 +126,14 @@ class AcsDirLink:
             raise ValueError(f"Invalid dir: {dir}")
 
     @classmethod
-    def parse_dir_links(cls, dirs: Iterable[str]) -> List["AcsDirLink"]:
-        return [cls(**cls.parse_dir(d)) for d in dirs]
+    def _from_dict(cls, d: dict[str, str]) -> AcsDirLink:
+        return cls(**d)
 
-    def link(self, *args, pretend: bool = False, **kwargs):
+    @classmethod
+    def parse_dir_links(cls, dirs: Iterable[str]) -> list[AcsDirLink]:
+        return [cls._from_dict(cls.parse_dir(d)) for d in dirs]
+
+    def link(self, pretend: bool = False):
         src_path = self.src_path.absolute()
         dest_path = self.dest_path.absolute()
         if dest_path.exists():
@@ -144,7 +149,7 @@ class AcsDirLink:
             if not pretend:
                 dest_path.symlink_to(src_path)
 
-    def unlink(self, *args, pretend: bool = False, **kwargs):
+    def unlink(self, pretend: bool = False):
         src_path = self.src_path.absolute()
         dest_path = self.dest_path.absolute()
         if dest_path.exists():
@@ -162,23 +167,23 @@ class AcsDirLink:
 class AcsCmdConfig:
     command: AcsCommand
     setup: AcsSetup
-    dirs: List[str] = field(default_factory=list)
+    dirs: list[str] = field(default_factory=list)
     pretend: bool = field(default=False)
     unlink_config: bool = field(default=False)
     tag: str = field(default="")
 
 
 def _make_argparser() -> ArgumentParser:
-    parser = ArgumentParser(description="Set up your system for your agent harness")
+    parser = ArgumentParser(description="set up your system for your agent harness")
     common_parent = ArgumentParser(add_help=False)
-    common_parent.add_argument(
+    _ = common_parent.add_argument(
         "-d",
         "--dir",
         dest="dir",
         action="append",
         help="Additional directories to mount",
     )
-    common_parent.add_argument(
+    _ = common_parent.add_argument(
         "-n",
         "--dry-run",
         "--pretend",
@@ -186,7 +191,7 @@ def _make_argparser() -> ArgumentParser:
         action="store_true",
         help="Perform a dry run",
     )
-    common_parent.add_argument(
+    _ = common_parent.add_argument(
         metavar="SETUP",
         dest="setup",
         choices=list(ACS_SETUP_ALIASES_REV.keys()),
@@ -195,7 +200,7 @@ def _make_argparser() -> ArgumentParser:
 
     cmd_subparsers = parser.add_subparsers(dest="command", required=True)
 
-    prepare_parser = cmd_subparsers.add_parser(
+    _prepare_parser = cmd_subparsers.add_parser(
         str(AcsCommand.PREPARE),
         parents=[common_parent],
         help="Prepare system for agent harness",
@@ -205,7 +210,7 @@ def _make_argparser() -> ArgumentParser:
         parents=[common_parent],
         help="Undo prepare",
     )
-    unprepare_parser.add_argument(
+    _ = unprepare_parser.add_argument(
         "-U",
         "--unlink-config",
         dest="unlink_config",
@@ -218,7 +223,7 @@ def _make_argparser() -> ArgumentParser:
         parents=[common_parent],
         help="Build image",
     )
-    build_parser.add_argument(
+    _ = build_parser.add_argument(
         "-t",
         "--tag",
         dest="tag",
@@ -293,7 +298,9 @@ acs_create() {{
 def prepare_msboc(config: AcsCmdConfig):
     logger.warning("Preparing microsandbox opencode is not implemented")
     config_mount = shlex.quote(
-        f"{SBX_OPENCODE_CONFIG_SRC / '.config' / 'opencode'}:/home/agent/.config/opencode:rw"
+        f"{
+            SBX_OPENCODE_CONFIG_SRC / '.config' / 'opencode'
+        }:/home/agent/.config/opencode:rw"
     )
     output = f"""# Example: create the microsandbox
 acs_create() {{
