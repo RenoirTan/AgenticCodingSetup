@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
 
+import logging
+import os
+import shlex
+import sys
 from argparse import ArgumentParser, Namespace
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from enum import StrEnum
-import logging
-import os
 from pathlib import Path
-import shlex
-from subprocess import Popen, PIPE, STDOUT
-import sys
+from subprocess import PIPE, STDOUT, Popen
 from typing import Literal
-import yaml
 
+import yaml
 
 REPO_ROOT = Path(__file__).parent.absolute()
 LOGS_DIR = REPO_ROOT / "log"
@@ -127,7 +127,7 @@ class AcsDirLink:
 
     @classmethod
     def _from_dict(cls, d: dict[str, str]) -> AcsDirLink:
-        return cls(**d)
+        return cls(**d)  # ty: ignore[invalid-argument-type]
 
     @classmethod
     def parse_dir_links(cls, dirs: Iterable[str]) -> list[AcsDirLink]:
@@ -389,8 +389,11 @@ def build_sbxoc(config: AcsCmdConfig):
     ]
     logger.info(f"$ {shlex.join(map(shlex.quote, build_cmd))}")
     build_process = Popen(build_cmd, stdout=PIPE, stderr=STDOUT)
-    for line in build_process.stdout:
-        logger.info(line.decode(encoding="utf-8").rstrip())
+    if build_process.stdout:
+        for line in build_process.stdout:
+            logger.info(line.decode(encoding="utf-8").rstrip())
+    else:
+        logger.info("No output from docker build")
     build_ret = build_process.wait()
     if build_ret != 0:
         raise ChildProcessError(f"docker build returned {build_ret}")
@@ -462,8 +465,11 @@ def build_msboc(config: AcsCmdConfig):
     ]
     logger.info(f"$ {shlex.join(map(shlex.quote, build_cmd))}")
     build_process = Popen(build_cmd, stdout=PIPE, stderr=STDOUT)
-    for line in build_process.stdout:
-        logger.info(line.decode(encoding="utf-8").rstrip())
+    if build_process.stdout:
+        for line in build_process.stdout:
+            logger.info(line.decode(encoding="utf-8").rstrip())
+    else:
+        logger.info("No output from docker build")
     build_ret = build_process.wait()
     if build_ret != 0:
         raise ChildProcessError(f"docker build returned {build_ret}")
@@ -545,4 +551,4 @@ if __name__ == "__main__":
     try:
         main()
     except Exception:
-        logger.error("An error occurred", exc_info=True)
+        logger.error("An error occurred", exc_info=True)  # ruff: ignore[G201]
