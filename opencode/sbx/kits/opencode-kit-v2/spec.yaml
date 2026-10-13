@@ -1,0 +1,16 @@
+schemaVersion: "2"
+kind: mixin
+name: opencode-kit-v2
+displayName: Opencode Kit v2
+description: Docker sandbox kit for OpenCode, updated for v2
+
+environment:
+  variables:
+    OPENCODE_CONFIG: /home/agent/sandbox/opencode/config/opencode.json
+    OPENCODE_CONFIG_DIR: /home/agent/sandbox/opencode/config/
+
+permissions:
+  network:
+    allow:
+      - "localhost:11434" # ollama
+

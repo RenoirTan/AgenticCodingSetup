@@ -18,20 +18,26 @@ import yaml
 REPO_ROOT = Path(__file__).parent.absolute()
 LOGS_DIR = REPO_ROOT / "log"
 OPENCODE_DIR = REPO_ROOT / "opencode"
+
 SBX_OPENCODE_DIR = OPENCODE_DIR / "sbx"
-SBX_OPENCODE_KIT_SRC = SBX_OPENCODE_DIR / "env-opencode-kit"
-SBX_OPENCODE_KIT_DEST = Path("/tmp/opencode-kit")
-SBX_OPENCODE_CONFIG_SRC = SBX_OPENCODE_DIR / "my-opencode-kit" / "files" / "home"
-SBX_OPENCODE_CONFIG_DEST = Path("/tmp/opencode-config")
+SBX_OPENCODE_KITS_DIR = SBX_OPENCODE_DIR / "kits"
+SBX_OPENCODE_CONFIGS_DIR = SBX_OPENCODE_DIR / "config" / "v2"
+SBX_OPENCODE_KIT_SRC = SBX_OPENCODE_KITS_DIR / "opencode-kit-v2"
+SBX_OPENCODE_KIT_DEST = Path("/home/agent/sandbox/opencode/kit")
+SBX_OPENCODE_CONFIG_SRC = SBX_OPENCODE_CONFIGS_DIR / "opencode"
+SBX_OPENCODE_CONFIG_DEST = Path("/home/agent/sandbox/opencode/config")
+# SBX_OPENCODE_CONFIG_DEST = Path("/home/agent/.config/opencode")
 SBX_OPENCODE_BUILD_ARGS = SBX_OPENCODE_DIR / "build-args.sbxoc.yaml"
 SBX_OPENCODE_COMPOSE = SBX_OPENCODE_DIR / "docker-compose.sbxoc.yaml"
 SBX_OPENCODE_BUILD_ENV = SBX_OPENCODE_DIR / ".env"
 SBX_OPENCODE_TEMPLATES_DIR = SBX_OPENCODE_DIR / "templates"
+
 MSB_OPENCODE_DIR = OPENCODE_DIR / "msb"
 MSB_OPENCODE_COMPOSE = MSB_OPENCODE_DIR / "docker-compose.msboc.yaml"
 MSB_OPENCODE_BUILD_ARGS = MSB_OPENCODE_DIR / "build-args.msboc.yaml"
 MSB_OPENCODE_BUILD_ENV = MSB_OPENCODE_DIR / ".env"
 MSB_OPENCODE_TEMPLATES_DIR = MSB_OPENCODE_DIR / "templates"
+MSB_OPENCODE_CONFIG_SRC = SBX_OPENCODE_CONFIG_SRC
 
 
 def _setup_logging() -> logging.Logger:
@@ -298,9 +304,7 @@ acs_create() {{
 def prepare_msboc(config: AcsCmdConfig):
     logger.warning("Preparing microsandbox opencode is not implemented")
     config_mount = shlex.quote(
-        f"{
-            SBX_OPENCODE_CONFIG_SRC / '.config' / 'opencode'
-        }:/home/agent/.config/opencode:rw"
+        f"{MSB_OPENCODE_CONFIG_SRC}:/home/agent/.config/opencode:rw"
     )
     output = f"""# Example: create the microsandbox
 acs_create() {{
