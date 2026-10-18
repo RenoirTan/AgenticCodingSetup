@@ -6,3 +6,11 @@ configs:
       OPENCODE_VERSION: 1.18.30
       DDGS_BRANCH: v9.16.0
       UV_VERSION: 0.12.13
+  -
+    tag: 2.0.32-1
+    dockerfile: ./Dockerfile.v2
+    environment:
+      BUN_VERSION: 1.4.3
+      OPENCODE_VERSION: 2.0.32
+      DDGS_BRANCH: v9.16.0
+      UV_VERSION: 0.13.1

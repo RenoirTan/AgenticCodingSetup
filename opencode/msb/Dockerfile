@@ -32,8 +32,6 @@ ENV PATH=/home/agent/.bun/bin:${PATH}
 
 WORKDIR /home/agent/project
 
-# SHELL ["/bin/bash", "-o", "pipefail", "-c"]
-
 USER agent
 
 RUN curl -fsSL "https://bun.com/install" \

@@ -455,6 +455,9 @@ def build_msboc(config: AcsCmdConfig):
         f"{k}={shlex.quote(v)}\n" for k, v in build_config["environment"].items()
     ]
     build_env.append(f"MBSOC_VERSION={build_config['tag']}\n")
+    dockerfile = build_config.get("dockerfile")
+    if dockerfile is not None:
+        build_env.append(f"DOCKERFILE={dockerfile}\n")
     with MSB_OPENCODE_BUILD_ENV.open("w") as bef:
         logger.info(f"Writing config for {build_config['tag']} in .env")
         bef.writelines(build_env)
