@@ -18,13 +18,14 @@ import yaml
 REPO_ROOT = Path(__file__).parent.absolute()
 LOGS_DIR = REPO_ROOT / "log"
 OPENCODE_DIR = REPO_ROOT / "opencode"
+OPENCODE_CONFIG_DIR = OPENCODE_DIR / "config" / "v2" / "opencode"
 
 SBX_OPENCODE_DIR = OPENCODE_DIR / "sbx"
 SBX_OPENCODE_KITS_DIR = SBX_OPENCODE_DIR / "kits"
-SBX_OPENCODE_CONFIGS_DIR = SBX_OPENCODE_DIR / "config" / "v2"
+# SBX_OPENCODE_CONFIGS_DIR = SBX_OPENCODE_DIR / "config" / "v2"
 SBX_OPENCODE_KIT_SRC = SBX_OPENCODE_KITS_DIR / "opencode-kit-v2"
 SBX_OPENCODE_KIT_DEST = Path("/home/agent/sandbox/opencode/kit")
-SBX_OPENCODE_CONFIG_SRC = SBX_OPENCODE_CONFIGS_DIR / "opencode"
+SBX_OPENCODE_CONFIG_SRC = OPENCODE_CONFIG_DIR
 SBX_OPENCODE_CONFIG_DEST = Path("/home/agent/sandbox/opencode/config")
 # SBX_OPENCODE_CONFIG_DEST = Path("/home/agent/.config/opencode")
 SBX_OPENCODE_BUILD_ARGS = SBX_OPENCODE_DIR / "build-args.sbxoc.yaml"
@@ -37,7 +38,7 @@ MSB_OPENCODE_COMPOSE = MSB_OPENCODE_DIR / "docker-compose.msboc.yaml"
 MSB_OPENCODE_BUILD_ARGS = MSB_OPENCODE_DIR / "build-args.msboc.yaml"
 MSB_OPENCODE_BUILD_ENV = MSB_OPENCODE_DIR / ".env"
 MSB_OPENCODE_TEMPLATES_DIR = MSB_OPENCODE_DIR / "templates"
-MSB_OPENCODE_CONFIG_SRC = SBX_OPENCODE_CONFIG_SRC
+MSB_OPENCODE_CONFIG_SRC = OPENCODE_CONFIG_DIR
 
 
 def _setup_logging() -> logging.Logger:

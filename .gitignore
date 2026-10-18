@@ -4,4 +4,4 @@ log/*
 **/.env
 **/.config/opencode/*
 !**/.gitkeep
-opencode/sbx/config/v2/opencode/*
+opencode/config/v2/opencode/*
