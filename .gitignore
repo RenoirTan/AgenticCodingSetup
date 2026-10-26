@@ -3,5 +3,6 @@ log/*
 **/msb/templates/*
 **/.env
 **/.config/opencode/*
-!**/.gitkeep
 opencode/config/v2/opencode/*
+universal/config/v2/.agents/*
+!**/.gitkeep

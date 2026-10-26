@@ -17,8 +17,13 @@ import yaml
 
 REPO_ROOT = Path(__file__).parent.absolute()
 LOGS_DIR = REPO_ROOT / "log"
+UNIVERSAL_DIR = REPO_ROOT / "universal"
+UNIVERSAL_CONFIG_DIR = UNIVERSAL_DIR / "config" / "v2" / ".agents"
 OPENCODE_DIR = REPO_ROOT / "opencode"
 OPENCODE_CONFIG_DIR = OPENCODE_DIR / "config" / "v2" / "opencode"
+
+UNIVERSAL_CONFIG_SRC = Path(UNIVERSAL_CONFIG_DIR)
+UNIVERSAL_CONFIG_DEST = Path("/home/agent/.agents")
 
 SBX_OPENCODE_DIR = OPENCODE_DIR / "sbx"
 SBX_OPENCODE_KITS_DIR = SBX_OPENCODE_DIR / "kits"
@@ -270,6 +275,10 @@ def prepare_sbxoc(config: AcsCmdConfig):
         src=str(SBX_OPENCODE_CONFIG_SRC),
         dest=str(SBX_OPENCODE_CONFIG_DEST),
     ).link(pretend=config.pretend)
+    AcsDirLink(
+        src=str(UNIVERSAL_CONFIG_SRC),
+        dest=str(UNIVERSAL_CONFIG_DEST),
+    ).link(pretend=config.pretend)
     logger.info("Linking additional directories")
     for d in dir_links:
         d.link(pretend=config.pretend)
@@ -282,6 +291,7 @@ def prepare_sbxoc(config: AcsCmdConfig):
     for d in dir_links:
         create_shcmd.append(str(d.dest_path))
     create_shcmd.append(str(SBX_OPENCODE_CONFIG_DEST))
+    create_shcmd.append(str(UNIVERSAL_CONFIG_DEST))
     create_shlex = shlex.join(map(shlex.quote, create_shcmd))
 
     output = f"""# You may find the following commands helpful
