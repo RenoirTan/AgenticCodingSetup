@@ -25,6 +25,11 @@ OPENCODE_CONFIG_DIR = OPENCODE_DIR / "config" / "v2" / "opencode"
 UNIVERSAL_CONFIG_SRC = Path(UNIVERSAL_CONFIG_DIR)
 UNIVERSAL_CONFIG_DEST = Path("/home/agent/.agents")
 
+SBX3_UNIVERSAL_DIR = UNIVERSAL_DIR / "sbx3"
+SBX3_UNIVERSAL_KITS_DIR = SBX3_UNIVERSAL_DIR / "kits"
+SBX3_DDGSMIXIN_DIR = SBX3_UNIVERSAL_KITS_DIR / "ddgs-mixin"
+SBX3_DDGSMIXIN_YAML = SBX3_DDGSMIXIN_DIR / "ddgs-mixin.yaml"
+
 SBX_OPENCODE_DIR = OPENCODE_DIR / "sbx"
 SBX_OPENCODE_KITS_DIR = SBX_OPENCODE_DIR / "kits"
 # SBX_OPENCODE_CONFIGS_DIR = SBX_OPENCODE_DIR / "config" / "v2"
@@ -37,6 +42,12 @@ SBX_OPENCODE_BUILD_ARGS = SBX_OPENCODE_DIR / "build-args.sbxoc.yaml"
 SBX_OPENCODE_COMPOSE = SBX_OPENCODE_DIR / "docker-compose.sbxoc.yaml"
 SBX_OPENCODE_BUILD_ENV = SBX_OPENCODE_DIR / ".env"
 SBX_OPENCODE_TEMPLATES_DIR = SBX_OPENCODE_DIR / "templates"
+
+SBX3_OPENCODE_DIR = OPENCODE_DIR / "sbx3"
+SBX3_OPENCODE_KITS_DIR = SBX3_OPENCODE_DIR / "kits"
+SBX3_OPENCODE_SET_DIR = SBX3_OPENCODE_KITS_DIR / "sbx3oc-set"
+SBX3_OPENCODE_SET_YAML = SBX3_OPENCODE_SET_DIR / "sbx3oc-set.yaml"
+SBX3_OPENCODE_BUILD_ARGS = SBX3_OPENCODE_DIR / "build-args.sbx3oc.yaml"
 
 MSB_OPENCODE_DIR = OPENCODE_DIR / "msb"
 MSB_OPENCODE_COMPOSE = MSB_OPENCODE_DIR / "docker-compose.msboc.yaml"
@@ -81,6 +92,7 @@ logger = _setup_logging()
 
 class AcsSetup(StrEnum):
     SBX_OPENCODE = "sbx_opencode"
+    SBX3_OPENCODE = "sbx3_opencode"
     MSB_OPENCODE = "msb_opencode"
 
 
@@ -88,6 +100,10 @@ ACS_SETUP_ALIASES: dict[AcsSetup, set[str]] = {
     AcsSetup.SBX_OPENCODE: {
         str(AcsSetup.SBX_OPENCODE),
         "sbxoc",
+    },
+    AcsSetup.SBX3_OPENCODE: {
+        str(AcsSetup.SBX3_OPENCODE),
+        "sbx3oc",
     },
     AcsSetup.MSB_OPENCODE: {
         str(AcsSetup.MSB_OPENCODE),
@@ -312,6 +328,51 @@ acs_create() {{
         print(output, file=sys.stderr)
 
 
+def prepare_sbx3oc(config: AcsCmdConfig):
+    logger.info("Preparing docker sbx3 opencode")
+    dir_links = AcsDirLink.parse_dir_links(config.dirs)
+    logger.info("Linking opencode config")
+    AcsDirLink(
+        src=str(SBX_OPENCODE_CONFIG_SRC),
+        dest=str(SBX_OPENCODE_CONFIG_DEST),
+    ).link(pretend=config.pretend)
+    AcsDirLink(
+        src=str(UNIVERSAL_CONFIG_SRC),
+        dest=str(UNIVERSAL_CONFIG_DEST),
+    ).link(pretend=config.pretend)
+    logger.info("Linking additional directories")
+    for d in dir_links:
+        d.link(pretend=config.pretend)
+
+    unprepare_shcmd = list(sys.argv)
+    unprepare_shcmd[sys.argv.index(str(AcsCommand.PREPARE))] = str(AcsCommand.UNPREPARE)
+    unprepare_shlex = shlex.join(map(shlex.quote, unprepare_shcmd))
+
+    create_shcmd = ["sbx", "create", "opencode", "--kit", str(SBX3_OPENCODE_SET_DIR)]
+    for d in dir_links:
+        create_shcmd.append(str(d.dest_path))
+    create_shcmd.append(str(SBX_OPENCODE_CONFIG_DEST))
+    create_shcmd.append(str(UNIVERSAL_CONFIG_DEST))
+    create_shlex = shlex.join(map(shlex.quote, create_shcmd))
+
+    output = f"""# You may find the following commands helpful
+# To source these command variables, do source <(./acs.py ...)
+# Then for example, acs_unprepare -U
+
+# Unlink config
+acs_unprepare() {{
+  {unprepare_shlex} $@
+}}
+
+# Create the harness
+acs_create() {{
+  {create_shlex} $@
+}}"""
+    print(output)
+    if not sys.stdout.isatty():
+        print(output, file=sys.stderr)
+
+
 def prepare_msboc(config: AcsCmdConfig):
     logger.warning("Preparing microsandbox opencode is not implemented")
     config_mount = shlex.quote(
@@ -349,6 +410,20 @@ def unprepare_sbxoc(config: AcsCmdConfig):
             src=str(SBX_OPENCODE_KIT_SRC),
             dest=str(SBX_OPENCODE_KIT_DEST),
         ).unlink(pretend=config.pretend)
+        AcsDirLink(
+            src=str(SBX_OPENCODE_CONFIG_SRC),
+            dest=str(SBX_OPENCODE_CONFIG_DEST),
+        ).unlink(pretend=config.pretend)
+    logger.info("Unlinking additional directories")
+    for d in dir_links:
+        d.unlink(pretend=config.pretend)
+
+
+def unprepare_sbx3oc(config: AcsCmdConfig):
+    logger.info("Unpreparing docker sbx3 opencode")
+    dir_links = AcsDirLink.parse_dir_links(config.dirs)
+    if config.unlink_config:
+        logger.info("Unlinking opencode config")
         AcsDirLink(
             src=str(SBX_OPENCODE_CONFIG_SRC),
             dest=str(SBX_OPENCODE_CONFIG_DEST),
@@ -441,6 +516,92 @@ acs_create_custom_sandbox() {{
         print(output, file=sys.stderr)
 
 
+def build_sbx3oc(config: AcsCmdConfig):
+    logger.info(f"Building sbx3oc:{config.tag or 'latest'}")
+    with SBX3_OPENCODE_BUILD_ARGS.open("r") as baf:
+        logger.debug(f"Opening {SBX3_OPENCODE_BUILD_ARGS}")
+        build_args = yaml.load(baf, Loader=yaml.CLoader)
+    ba_configs = build_args.get("configs")
+    if type(ba_configs) is not list:
+        raise ValueError(f"Bad {SBX3_OPENCODE_BUILD_ARGS}")
+    build_config = None
+    if config.tag:
+        for bc in ba_configs:
+            if bc["tag"] == config.tag:
+                build_config = bc
+                break
+    else:
+        build_config = ba_configs[0]
+    if build_config is None:
+        raise ValueError(f"Could not find sbx3oc:{config.tag}")
+    logger.debug(f"Found config for {build_config['tag']}")
+
+    build_environment = build_config["environment"]
+
+    ddgs_image_name = f"docker.io/renoirtan/ddgs-mixin:{build_environment['DDGS_TAG']}"
+
+    logger.info(f"Building renoirtan/ddgs-mixin:{build_environment['DDGS_TAG']}")
+    ddgs_build_cmd = [
+        "docker",
+        "buildx",
+        "build",
+        str(SBX3_DDGSMIXIN_DIR.absolute()),
+        "-f",
+        str(SBX3_DDGSMIXIN_YAML.absolute()),
+        "-t",
+        ddgs_image_name,
+        "--build-arg",
+        f"DDGS_BRANCH={build_environment['DDGS_BRANCH']}",
+    ]
+    logger.info(f"$ {shlex.join(map(shlex.quote, ddgs_build_cmd))}")
+    ddgs_build_process = Popen(ddgs_build_cmd, stdout=PIPE, stderr=STDOUT)
+    if ddgs_build_process.stdout:
+        for line in ddgs_build_process.stdout:
+            logger.info(line.decode(encoding="utf-8").rstrip())
+    else:
+        logger.info("No output from docker buildx build")
+    ddgs_build_ret = ddgs_build_process.wait()
+    if ddgs_build_ret != 0:
+        raise ChildProcessError(f"docker buildx build returned {ddgs_build_ret}")
+    logger.info("Build successful")
+
+    set_image_name = f"renoirtan/sbx3oc-set:{build_config['tag']}"
+    logger.info(f"Building {set_image_name}")
+    set_build_cmd = [
+        "docker",
+        "buildx",
+        "build",
+        str(SBX3_OPENCODE_SET_DIR.absolute()),
+        "-f",
+        str(SBX3_OPENCODE_SET_YAML.absolute()),
+        "-t",
+        set_image_name,
+    ]
+    logger.info(f"$ {shlex.join(map(shlex.quote, set_build_cmd))}")
+    ddgs_build_process = Popen(set_build_cmd, stdout=PIPE, stderr=STDOUT)
+    if ddgs_build_process.stdout:
+        for line in ddgs_build_process.stdout:
+            logger.info(line.decode(encoding="utf-8").rstrip())
+    else:
+        logger.info("No output from docker buildx build")
+    set_build_ret = ddgs_build_process.wait()
+    if set_build_ret != 0:
+        raise ChildProcessError(f"docker buildx build returned {set_build_ret}")
+    logger.info("Build successful")
+
+    set_image_shname = shlex.quote(set_image_name)
+    output = f"""# Run the following commands to export and use the image.
+
+# Create an opencode sandbox
+acs_create_sandbox() {{
+    sbx create opencode --kit {set_image_shname} "$@"
+}}"""
+
+    print(output)
+    if not sys.stdout.isatty():
+        print(output, file=sys.stderr)
+
+
 def build_msboc(config: AcsCmdConfig):
     logger.info(f"Building msboc:{config.tag or 'latest'}")
     os.chdir(MSB_OPENCODE_DIR)
@@ -520,6 +681,8 @@ def prepare(config: AcsCmdConfig):
     match config.setup:
         case AcsSetup.SBX_OPENCODE:
             return prepare_sbxoc(config)
+        case AcsSetup.SBX3_OPENCODE:
+            return prepare_sbx3oc(config)
         case AcsSetup.MSB_OPENCODE:
             return prepare_msboc(config)
         case _:
@@ -530,6 +693,8 @@ def unprepare(config: AcsCmdConfig):
     match config.setup:
         case AcsSetup.SBX_OPENCODE:
             return unprepare_sbxoc(config)
+        case AcsSetup.SBX3_OPENCODE:
+            return unprepare_sbx3oc(config)
         case AcsSetup.MSB_OPENCODE:
             return unprepare_msboc(config)
         case _:
@@ -540,6 +705,8 @@ def build(config: AcsCmdConfig):
     match config.setup:
         case AcsSetup.SBX_OPENCODE:
             return build_sbxoc(config)
+        case AcsSetup.SBX3_OPENCODE:
+            return build_sbx3oc(config)
         case AcsSetup.MSB_OPENCODE:
             return build_msboc(config)
         case _:

@@ -1,0 +1,15 @@
+# syntax=docker/sandbox-kit:3
+
+schemaVersion: "3"
+kind: mixin
+displayName: DDGS Mixin for Docker Sandboxes
+description: Provides DDGS search MCP for Docker Sandboxes. Utilises the latest v3 kit specification.
+
+args:
+  ddgsBranch:
+    default: "v9.16.1"
+    pattern: '^v[0-9]+\.[0-9]+\.[0-9]+$'
+    description: DDGS release to install
+    buildArg: DDGS_BRANCH
+
+dockerfile: ./ddgs-mixin.dockerfile

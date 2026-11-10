@@ -1,0 +1,30 @@
+# syntax=docker/sandbox-kit:3
+
+schemaVersion: "3"
+kind: set
+displayName: Docker Sandbox OpenCode Kit Set
+description: My kit set for OpenCode on Docker Sandboxes
+
+# this kit set is a mixin-only set
+kits:
+  # - ref: docker.io/sbx/opencode:latest
+  - ref: docker.io/renoirtan/ddgs-mixin:9.16.1-1
+
+capabilities:
+  # The agent's own egress rides with the kit that ships the agent: the
+  # base grants nothing for services it doesn't carry.
+  - type: com.docker.sandbox/network-policy@1
+    config:
+      runtime:
+        allow:
+          - localhost:11434 # ollama
+  - type: com.docker.sandbox/lifecycle@1
+    config:
+      install:
+        # Sets the custom opencode config directories
+        # because docker sbx's opencode workload interferes
+        # with the default /home/agent/.config/opencode
+        - command: echo "export OPENCODE_CONFIG=/home/agent/sandbox/opencode/config/opencode.json\nexport OPENCODE_CONFIG_DIR=/home/agent/sandbox/opencode/config/" | tee -a /etc/sandbox-persistent.sh
+          user: "1000"
+          description: Set OPENCODE_CONFIG
+      startup: []

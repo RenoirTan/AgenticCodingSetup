@@ -1,0 +1,6 @@
+configs:
+  -
+    tag: 0.1.0
+    environment:
+      DDGS_BRANCH: v9.16.1
+      DDGS_TAG: 9.16.1-1
