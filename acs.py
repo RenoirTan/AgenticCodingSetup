@@ -265,7 +265,7 @@ def _make_argparser() -> ArgumentParser:
 def _parse_namespace(args: Namespace) -> AcsCmdConfig:
     command = AcsCommand(args.command)
     setup = ACS_SETUP_ALIASES_REV[args.setup]
-    dirs = args.dir
+    dirs = args.dir or []
     pretend = args.pretend
     unlink_config = getattr(args, "unlink_config", False)
     tag = getattr(args, "tag", "")
