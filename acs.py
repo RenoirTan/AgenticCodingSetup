@@ -27,6 +27,8 @@ UNIVERSAL_CONFIG_DEST = Path("/home/agent/.agents")
 
 SBX3_UNIVERSAL_DIR = UNIVERSAL_DIR / "sbx3"
 SBX3_UNIVERSAL_KITS_DIR = SBX3_UNIVERSAL_DIR / "kits"
+SBX3_COREMIXIN_DIR = SBX3_UNIVERSAL_KITS_DIR / "core-mixin"
+SBX3_COREMIXIN_YAML = SBX3_COREMIXIN_DIR / "core-mixin.yaml"
 SBX3_DDGSMIXIN_DIR = SBX3_UNIVERSAL_KITS_DIR / "ddgs-mixin"
 SBX3_DDGSMIXIN_YAML = SBX3_DDGSMIXIN_DIR / "ddgs-mixin.yaml"
 
@@ -553,9 +555,7 @@ def build_sbx3oc(config: AcsCmdConfig):
         "--build-arg",
         f"DDGS_BRANCH={build_environment['DDGS_BRANCH']}",
         "--build-arg",
-        f"SHELL_IMAGE_TAG={build_environment['SHELL_IMAGE_TAG']}",
-        "--build-arg",
-        f"UV_TAG={build_environment['UV_TAG']}",
+        f"SHELL_TAG={build_environment['SHELL_TAG']}",
     ]
     logger.info(f"$ {shlex.join(map(shlex.quote, ddgs_build_cmd))}")
     ddgs_build_process = Popen(ddgs_build_cmd, stdout=PIPE, stderr=STDOUT)
@@ -567,6 +567,34 @@ def build_sbx3oc(config: AcsCmdConfig):
     ddgs_build_ret = ddgs_build_process.wait()
     if ddgs_build_ret != 0:
         raise ChildProcessError(f"docker buildx build returned {ddgs_build_ret}")
+    logger.info("Build successful")
+
+    core_image_name = f"docker.io/renoirtan/core-mixin:{build_environment['CORE_TAG']}"
+    logger.info(f"Building renoirtan/core-mixin:{build_environment['CORE_TAG']}")
+    core_build_cmd = [
+        "docker",
+        "buildx",
+        "build",
+        str(SBX3_COREMIXIN_DIR.absolute()),
+        "-f",
+        str(SBX3_COREMIXIN_YAML.absolute()),
+        "-t",
+        core_image_name,
+        "--build-arg",
+        f"SHELL_TAG={build_environment['SHELL_TAG']}",
+        "--build-arg",
+        f"UV_TAG={build_environment['UV_TAG']}",
+    ]
+    logger.info(f"$ {shlex.join(map(shlex.quote, core_build_cmd))}")
+    core_build_process = Popen(core_build_cmd, stdout=PIPE, stderr=STDOUT)
+    if core_build_process.stdout:
+        for line in core_build_process.stdout:
+            logger.info(line.decode(encoding="utf-8").rstrip())
+    else:
+        logger.info("No output from docker buildx build")
+    core_build_ret = core_build_process.wait()
+    if core_build_ret != 0:
+        raise ChildProcessError(f"docker buildx build returned {core_build_ret}")
     logger.info("Build successful")
 
     """

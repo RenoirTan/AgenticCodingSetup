@@ -6,8 +6,13 @@ displayName: Docker Sandbox OpenCode Kit Set
 description: My kit set for OpenCode on Docker Sandboxes
 
 args:
+  coreTag:
+    default: "0.2.1"
+    pattern: '.*'
+    description: Core tag to use 
+    buildArg: CORE_TAG
   ddgsTag:
-    default: "9.16.1-3"
+    default: "9.16.1-4"
     pattern: '.*'
     description: DDGS mixin tag to use
     buildArg: DDGS_TAG
@@ -15,6 +20,7 @@ args:
 # this kit set is a mixin-only set
 kits:
   # - ref: docker.io/sbx/opencode-mixin:latest
+  - ref: docker.io/renoirtan/core-mixin:${{ kit.args.coreTag }}
   - ref: docker.io/renoirtan/ddgs-mixin:${{ kit.args.ddgsTag }}
 
 capabilities:

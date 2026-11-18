@@ -1,0 +1,15 @@
+# syntax=docker/sandbox-kit:3
+
+schemaVersion: "3"
+kind: mixin
+displayName: Core Mixin for Docker Sandboxes
+description: Provides core binaries that are missing from docker sbx's shell image.
+
+args:
+  shellTag:
+    default: "1.1.0"
+    pattern: '.*'
+    description: Tag of sbx/shell
+    buildArg: SHELL_TAG
+
+dockerfile: ./core-mixin.dockerfile

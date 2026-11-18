@@ -1,10 +1,7 @@
 ARG DDGS_BRANCH
-ARG UV_TAG
-ARG SHELL_IMAGE_TAG
+ARG SHELL_TAG
 
-FROM --platform=$BUILDPLATFORM astral/uv:${UV_TAG} AS uv
-
-FROM --platform=$BUILDPLATFORM docker.io/sbx/shell-image:${SHELL_IMAGE_TAG} AS build
+FROM --platform=$BUILDPLATFORM docker.io/sbx/shell:${SHELL_TAG} AS build
 ARG DDGS_BRANCH
 
 USER root
@@ -21,8 +18,7 @@ RUN git clone --depth 1 --branch ${DDGS_BRANCH} https://github.com/deedy5/ddgs /
 WORKDIR /opt/ddgs
 RUN uv venv --python 3.14 --managed-python && uv sync --extra mcp
 
-FROM docker.io/sbx/shell-image:${SHELL_IMAGE_TAG}
+FROM docker.io/sbx/shell:${SHELL_TAG}
 
 COPY --from=build /opt/ddgs /opt/ddgs
 COPY --from=build /opt/ddgs-python /opt/ddgs-python
-COPY --from=uv /uv /uvx /usr/local/bin/

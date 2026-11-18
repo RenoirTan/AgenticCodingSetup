@@ -11,15 +11,10 @@ args:
     pattern: '^v[0-9]+\.[0-9]+\.[0-9]+$'
     description: DDGS release to install
     buildArg: DDGS_BRANCH
-  ddgsShellImageTag:
-    default: "latest"
+  shellTag:
+    default: "1.1.0"
     pattern: '.*'
-    description: Tag of sbx/shell-image
-    buildArg: SHELL_IMAGE_TAG
-  ddgsUvTag:
-    default: "latest"
-    pattern: '.*'
-    description: Tag of astral/uv
-    buildArg: UV_TAG
+    description: Tag of sbx/shell
+    buildArg: SHELL_TAG
 
 dockerfile: ./ddgs-mixin.dockerfile
