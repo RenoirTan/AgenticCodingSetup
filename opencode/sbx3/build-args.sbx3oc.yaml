@@ -8,3 +8,7 @@ configs:
     tag: 0.2.1
     environment:
       UNIVERSAL_TAG: 0.2.1
+  -
+    tag: 0.2.2
+    environment:
+      UNIVERSAL_TAG: 0.2.2

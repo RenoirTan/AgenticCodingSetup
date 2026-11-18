@@ -7,3 +7,11 @@ configs:
       CORE_TAG: 0.2.1
       SHELL_TAG: 1.1.0
       UV_TAG: 0.13.9
+  -
+    tag: 0.2.2
+    environment:
+      DDGS_BRANCH: v9.16.1
+      DDGS_TAG: 9.16.1-4
+      CORE_TAG: 0.2.2
+      SHELL_TAG: 1.1.0
+      UV_TAG: 0.13.9

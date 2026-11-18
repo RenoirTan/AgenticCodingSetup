@@ -10,7 +10,7 @@ COPY --from=uv /uv /uvx /usr/local/bin/
 USER root
 
 RUN apt-get update -y \
-  && apt-get install -y --no-install-recommends nodejs npm \
+  && apt-get install -y --no-install-recommends nodejs npm python3 \
   && rm -rf /var/lib/apt/lists
 
 USER agent

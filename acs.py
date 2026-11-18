@@ -355,13 +355,29 @@ def prepare_sbx3oc(config: AcsCmdConfig):
     unprepare_shcmd[sys.argv.index(str(AcsCommand.PREPARE))] = str(AcsCommand.UNPREPARE)
     unprepare_shlex = shlex.join(map(shlex.quote, unprepare_shcmd))
 
-    create_shcmd = ["sbx", "create", "opencode", "--kit", str(SBX3_OPENCODE_SET_DIR)]
+    create_shcmd = [
+        "sbx",
+        "create",
+        "sbx/opencode:latest",
+        "--name",
+        "my-sandbox",
+    ]
     for d in dir_links:
         create_shcmd.append(str(d.dest_path))
     create_shcmd.append(str(SBX_OPENCODE_CONFIG_DEST))
     create_shcmd.append(str(UNIVERSAL_CONFIG_DEST))
     create_shlex = shlex.join(map(shlex.quote, create_shcmd))
 
+    addkit_shcmd = [
+        "sbx",
+        "kit",
+        "add",
+        "my-sandbox",
+        str(SBX3_OPENCODE_SET_DIR),
+    ]
+    addkit_shlex = shlex.join(addkit_shcmd)
+
+    # TODO: allow acs_create to separate additional args for create and addkit
     output = f"""# You may find the following commands helpful
 # To source these command variables, do source <(./acs.py ...)
 # Then for example, acs_unprepare -U
@@ -373,7 +389,8 @@ acs_unprepare() {{
 
 # Create the harness
 acs_create() {{
-  {create_shlex} $@
+  {create_shlex}
+  {addkit_shlex}
 }}"""
     print(output)
     if not sys.stdout.isatty():
