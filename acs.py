@@ -27,6 +27,7 @@ UNIVERSAL_CONFIG_DEST = Path("/home/agent/.agents")
 
 SBX3_UNIVERSAL_DIR = UNIVERSAL_DIR / "sbx3"
 SBX3_UNIVERSAL_KITS_DIR = SBX3_UNIVERSAL_DIR / "kits"
+SBX3_UNIVERSAL_BUILD_ARGS = SBX3_UNIVERSAL_DIR / "build-args.sbx3.yaml"
 SBX3_COREMIXIN_DIR = SBX3_UNIVERSAL_KITS_DIR / "core-mixin"
 SBX3_COREMIXIN_YAML = SBX3_COREMIXIN_DIR / "core-mixin.yaml"
 SBX3_DDGSMIXIN_DIR = SBX3_UNIVERSAL_KITS_DIR / "ddgs-mixin"
@@ -94,6 +95,7 @@ logger = _setup_logging()
 
 class AcsSetup(StrEnum):
     SBX_OPENCODE = "sbx_opencode"
+    SBX3 = "sbx3"
     SBX3_OPENCODE = "sbx3_opencode"
     MSB_OPENCODE = "msb_opencode"
 
@@ -102,6 +104,9 @@ ACS_SETUP_ALIASES: dict[AcsSetup, set[str]] = {
     AcsSetup.SBX_OPENCODE: {
         str(AcsSetup.SBX_OPENCODE),
         "sbxoc",
+    },
+    AcsSetup.SBX3: {
+        str(AcsSetup.SBX3),
     },
     AcsSetup.SBX3_OPENCODE: {
         str(AcsSetup.SBX3_OPENCODE),
@@ -518,14 +523,14 @@ acs_create_custom_sandbox() {{
         print(output, file=sys.stderr)
 
 
-def build_sbx3oc(config: AcsCmdConfig):
-    logger.info(f"Building sbx3oc:{config.tag or 'latest'}")
-    with SBX3_OPENCODE_BUILD_ARGS.open("r") as baf:
-        logger.debug(f"Opening {SBX3_OPENCODE_BUILD_ARGS}")
+def build_sbx3(config: AcsCmdConfig):
+    logger.info(f"Building sbx3:{config.tag or 'latest'}")
+    with SBX3_UNIVERSAL_BUILD_ARGS.open("r") as baf:
+        logger.debug(f"Opening {SBX3_UNIVERSAL_BUILD_ARGS}")
         build_args = yaml.load(baf, Loader=yaml.CLoader)
     ba_configs = build_args.get("configs")
     if type(ba_configs) is not list:
-        raise ValueError(f"Bad {SBX3_OPENCODE_BUILD_ARGS}")
+        raise ValueError(f"Bad {SBX3_UNIVERSAL_BUILD_ARGS}")
     build_config = None
     if config.tag:
         for bc in ba_configs:
@@ -535,7 +540,7 @@ def build_sbx3oc(config: AcsCmdConfig):
     else:
         build_config = ba_configs[0]
     if build_config is None:
-        raise ValueError(f"Could not find sbx3oc:{config.tag}")
+        raise ValueError(f"Could not find sbx3:{config.tag}")
     logger.debug(f"Found config for {build_config['tag']}")
 
     build_environment = build_config["environment"]
@@ -596,6 +601,21 @@ def build_sbx3oc(config: AcsCmdConfig):
     if core_build_ret != 0:
         raise ChildProcessError(f"docker buildx build returned {core_build_ret}")
     logger.info("Build successful")
+
+    output = f"""# Run the following commands to create an agent that uses the universal kits.
+
+# Create a universal sandbox
+acs_create_sandbox() {{
+    sbx create shell --kit {shlex.quote(core_image_name)} --kit {shlex.quote(ddgs_image_name)} "$@"
+}}"""
+
+    print(output)
+    if not sys.stdout.isatty():
+        print(output, file=sys.stderr)
+
+
+def build_sbx3oc(config: AcsCmdConfig):
+    logger.info(f"Nothing to build for sbx3oc:{config.tag or 'latest'}")
 
     """
     set_image_name = f"renoirtan/sbx3oc-set:{build_config['tag']}"
@@ -718,6 +738,8 @@ def prepare(config: AcsCmdConfig):
     match config.setup:
         case AcsSetup.SBX_OPENCODE:
             return prepare_sbxoc(config)
+        case AcsSetup.SBX3:
+            print(f"{AcsSetup.SBX3} is a universal setup. Nothing to do.")
         case AcsSetup.SBX3_OPENCODE:
             return prepare_sbx3oc(config)
         case AcsSetup.MSB_OPENCODE:
@@ -730,6 +752,8 @@ def unprepare(config: AcsCmdConfig):
     match config.setup:
         case AcsSetup.SBX_OPENCODE:
             return unprepare_sbxoc(config)
+        case AcsSetup.SBX3:
+            print(f"{AcsSetup.SBX3} is a universal setup. Nothing to do.")
         case AcsSetup.SBX3_OPENCODE:
             return unprepare_sbx3oc(config)
         case AcsSetup.MSB_OPENCODE:
@@ -742,6 +766,8 @@ def build(config: AcsCmdConfig):
     match config.setup:
         case AcsSetup.SBX_OPENCODE:
             return build_sbxoc(config)
+        case AcsSetup.SBX3:
+            return build_sbx3(config)
         case AcsSetup.SBX3_OPENCODE:
             return build_sbx3oc(config)
         case AcsSetup.MSB_OPENCODE:

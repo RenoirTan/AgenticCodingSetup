@@ -12,16 +12,24 @@ You will notice an `sbx3` and maybe an `sbx` version for each agent. This is bec
 
 ### sbx3oc
 
+#### Build
+
+Note that we are using the `sbx3` universal setup which contains mixins that are common to all agents.
+
 ```bash
-./acs.py build sbx3oc -t 0.2.0
+./acs.py build sbx3 -t 0.2.1
 ```
+
+#### Preparation
 
 ```bash
 ./acs.py prepare sbx3oc -d $HOME/project:/home/agent/project
 ```
 
+#### Usage
+
 ```bash
-sbx create sbx/opencode:2.3.0 --kit /path/to/ACS/opencode/sbx3/kits/sbx3oc-set --kit-arg ddgsTag=9.16.1-3 /home/agent/project
+sbx create sbx/opencode:2.3.0 --kit /path/to/ACS/opencode/sbx3/kits/sbx3oc-set --kit-arg coreTag=0.2.1 --kit-arg ddgsTag=9.16.1-4 /home/agent/project
 ```
 
 ### sbxoc
