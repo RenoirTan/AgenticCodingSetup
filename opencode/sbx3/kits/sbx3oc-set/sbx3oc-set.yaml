@@ -5,10 +5,17 @@ kind: set
 displayName: Docker Sandbox OpenCode Kit Set
 description: My kit set for OpenCode on Docker Sandboxes
 
+args:
+  ddgsTag:
+    default: "9.16.1-3"
+    pattern: '.*'
+    description: DDGS mixin tag to use
+    buildArg: DDGS_TAG
+
 # this kit set is a mixin-only set
 kits:
-  # - ref: docker.io/sbx/opencode:latest
-  - ref: docker.io/renoirtan/ddgs-mixin:9.16.1-1
+  # - ref: docker.io/sbx/opencode-mixin:latest
+  - ref: docker.io/renoirtan/ddgs-mixin:${{ kit.args.ddgsTag }}
 
 capabilities:
   # The agent's own egress rides with the kit that ships the agent: the

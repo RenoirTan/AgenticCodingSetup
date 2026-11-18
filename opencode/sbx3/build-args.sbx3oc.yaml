@@ -4,3 +4,10 @@ configs:
     environment:
       DDGS_BRANCH: v9.16.1
       DDGS_TAG: 9.16.1-1
+  -
+    tag: 0.2.0
+    environment:
+      DDGS_BRANCH: v9.16.1
+      DDGS_TAG: 9.16.1-3
+      SHELL_IMAGE_TAG: latest
+      UV_TAG: 0.13.9

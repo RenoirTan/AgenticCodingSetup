@@ -552,6 +552,10 @@ def build_sbx3oc(config: AcsCmdConfig):
         ddgs_image_name,
         "--build-arg",
         f"DDGS_BRANCH={build_environment['DDGS_BRANCH']}",
+        "--build-arg",
+        f"SHELL_IMAGE_TAG={build_environment['SHELL_IMAGE_TAG']}",
+        "--build-arg",
+        f"UV_TAG={build_environment['UV_TAG']}",
     ]
     logger.info(f"$ {shlex.join(map(shlex.quote, ddgs_build_cmd))}")
     ddgs_build_process = Popen(ddgs_build_cmd, stdout=PIPE, stderr=STDOUT)
@@ -565,6 +569,7 @@ def build_sbx3oc(config: AcsCmdConfig):
         raise ChildProcessError(f"docker buildx build returned {ddgs_build_ret}")
     logger.info("Build successful")
 
+    """
     set_image_name = f"renoirtan/sbx3oc-set:{build_config['tag']}"
     logger.info(f"Building {set_image_name}")
     set_build_cmd = [
@@ -576,6 +581,8 @@ def build_sbx3oc(config: AcsCmdConfig):
         str(SBX3_OPENCODE_SET_YAML.absolute()),
         "-t",
         set_image_name,
+        "--build-arg",
+        f"DDGS_TAG={build_environment['DDGS_TAG']}",
     ]
     logger.info(f"$ {shlex.join(map(shlex.quote, set_build_cmd))}")
     ddgs_build_process = Popen(set_build_cmd, stdout=PIPE, stderr=STDOUT)
@@ -588,8 +595,10 @@ def build_sbx3oc(config: AcsCmdConfig):
     if set_build_ret != 0:
         raise ChildProcessError(f"docker buildx build returned {set_build_ret}")
     logger.info("Build successful")
+    """
 
-    set_image_shname = shlex.quote(set_image_name)
+    # set_image_shname = shlex.quote(set_image_name)
+    set_image_shname = shlex.quote(str(SBX3_OPENCODE_SET_DIR))
     output = f"""# Run the following commands to export and use the image.
 
 # Create an opencode sandbox
